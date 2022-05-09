@@ -37,7 +37,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hub.load_devices()
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
-    
+
     return True
 
 

@@ -28,7 +28,7 @@ from homeassistant.const import (
 # HA_TO_XCOMF_PRESET = {
 #     'Protection': 1,
 #     PRESET_ECO: 2,
-#     PRESET_COMFORT: 3,    
+#     PRESET_COMFORT: 3,
 # }
 
 
@@ -69,7 +69,7 @@ class HASSXComfortRcTouch(ClimateEntity):
     _attr_temperature_unit = TEMP_CELSIUS
     _attr_hvac_modes = [HVAC_MODE_AUTO]
     _attr_supported_features = SUPPORT_FLAGS
-    
+
 
     def __init__(self, hass: HomeAssistant, hub: XComfortHub, device: RcTouch):
         self.hass = hass
@@ -82,10 +82,10 @@ class HASSXComfortRcTouch(ClimateEntity):
 
         comp = hub.bridge.getComp(self._device._device["compId"])
         self.versionFW = comp["versionFW"]
-        
+
         rh = hub.bridge.getRoomHeating(self.device_id)
-        self.setpoint = float(rh["setpoint"])        
-    
+        self.setpoint = float(rh["setpoint"])
+
     async def async_added_to_hass(self):
         _LOGGER.warning(f"Added to hass {self._name} ")
         if self._device.state is None:
@@ -94,7 +94,7 @@ class HASSXComfortRcTouch(ClimateEntity):
             self._device.state.subscribe(lambda state: self._state_change(state))
 
     def _state_change(self, state):
-        self._state = state        
+        self._state = state
         should_update = self._state is not None
 
         log(f"State changed {self._name} : {state}")
@@ -103,24 +103,24 @@ class HASSXComfortRcTouch(ClimateEntity):
             self.schedule_update_ha_state()
 
     async def async_set_preset_mode(self, preset_mode):
-        log(f"Set Preset mode {preset_mode}")    
+        log(f"Set Preset mode {preset_mode}")
         rh = self.hub.bridge.getRoomHeating(self.device_id)
-        await self.hub.bridge.connection.send_message(Messages.SET_HEATING_STATE,{             
+        await self.hub.bridge.connection.send_message(Messages.SET_HEATING_STATE,{
             "roomId" :rh['roomId'],
             "mode" : self._state.mode,
-            "state" : rh['state'],            
+            "state" : rh['state'],
             "confirmed": False})
 
-    async def async_set_temperature(self, **kwargs):        
-        log(f"Set temperature {kwargs}") 
+    async def async_set_temperature(self, **kwargs):
+        log(f"Set temperature {kwargs}")
         rh = self.hub.bridge.getRoomHeating(self.device_id)
-        await self.hub.bridge.connection.send_message(Messages.SET_HEATING_STATE,{             
+        await self.hub.bridge.connection.send_message(Messages.SET_HEATING_STATE,{
             "roomId" :rh['roomId'],
             "mode" : self._state.mode,
             "state" : rh['state'],
             "setpoint" : kwargs['temperature'],
             "confirmed": False})
-    
+
     @property
     def device_info(self):
         return {
@@ -159,14 +159,14 @@ class HASSXComfortRcTouch(ClimateEntity):
     def current_humidity(self):
         """Return the current humidity."""
         return int(self._state.current_humidity)
-    
+
     @property
     def hvac_action(self):
         if(self._state.power > 0):
-            return CURRENT_HVAC_HEAT	
+            return CURRENT_HVAC_HEAT
         else:
             return CURRENT_HVAC_IDLE
-    
+
     @property
     def target_temperature(self):
         """Returns the setpoint from RC touch, e.g. target_temperature"""

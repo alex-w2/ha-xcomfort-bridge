@@ -76,7 +76,7 @@ class XComfortBridge(Bridge):
         self.logger = lambda x: log(x)
 
     def _add_device(self, device):
-        self._devices[device.device_id] = device            
+        self._devices[device.device_id] = device
 
     def _handle_SET_STATE_INFO(self, payload):
         for item in payload['item']:
@@ -106,12 +106,12 @@ class XComfortBridge(Bridge):
             for comp in payload["comps"]:
                 self._comps[comp['compId']] = comp
 
-    def _handle_SET_HOME_DATA(self, payload):                
+    def _handle_SET_HOME_DATA(self, payload):
         for device in self._devicelist.values():
             device_id = device["deviceId"]
-            name = device["name"]                
-            dev_type = device["devType"]            
-            if dev_type == 100 or dev_type == 101:                    
+            name = device["name"]
+            dev_type = device["devType"]
+            if dev_type == 100 or dev_type == 101:
                 state = LightState(device["switch"], device["dimmvalue"])
                 thing = self._devices.get(device_id)
                 if thing is not None:
@@ -123,9 +123,9 @@ class XComfortBridge(Bridge):
                     light = Light(self, device_id, name, dimmable, state)
                     self._add_device(light)
             elif dev_type == 450:
-                rh = self.getRoomHeating(device_id)                                                            
+                rh = self.getRoomHeating(device_id)
                 state = RcTouchState(device,float(rh['power']),float(rh['setpoint']),rh['currentMode'])
-                
+
                 thing = self._devices.get(device_id)
                 if thing is not None:
                     log(f"updating rc touch {device_id},{name} {state}")
@@ -135,7 +135,7 @@ class XComfortBridge(Bridge):
                     rctouch = RcTouch(self,device_id,name,device,state)
                     self._add_device(rctouch)
 
-            else:            
+            else:
                 log(f"Unknown device type {dev_type} named '{name}' - Skipped")
 
         self.state = State.Ready

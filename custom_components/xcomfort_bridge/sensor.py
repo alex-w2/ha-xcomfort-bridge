@@ -13,10 +13,10 @@ from homeassistant.components.sensor import (
 )
 from .rctouch import RcTouch
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (  
-    ENERGY_KILO_WATT_HOUR,  
+from homeassistant.const import (
+    ENERGY_KILO_WATT_HOUR,
     PERCENTAGE,
-    POWER_WATT,    
+    POWER_WATT,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -35,7 +35,7 @@ async def async_setup_entry(
     sensors= list()
     for device in devices:
         if isinstance(device,RcTouch):
-            _LOGGER.info(f"Adding {device}")            
+            _LOGGER.info(f"Adding {device}")
             sensors.append(XComfortPowerSensor(device))
             sensors.append(XComfortEnergySensor(device))
             sensors.append(XComfortHumiditySensor(device))
@@ -65,8 +65,8 @@ class XComfortPowerSensor(SensorEntity):
         self._state = state
         if should_update:
             self.async_write_ha_state()
-    
-    @property 
+
+    @property
     def device_class(self):
         return SensorDeviceClass.ENERGY
 
@@ -77,11 +77,11 @@ class XComfortPowerSensor(SensorEntity):
     @property
     def native_value(self):
         return self._state.power
-        
+
 class XComfortEnergySensor(SensorEntity):
 
     _attr_state_class = SensorStateClass.TOTAL
-    
+
     def __init__(self, device:RcTouch):
         self._attr_device_class = SensorEntityDescription(
             key="energy_used",
@@ -94,22 +94,22 @@ class XComfortEnergySensor(SensorEntity):
         self._attr_unique_id = f"energy_kwh_{self._device.name}_{self._device.device_id}"
         self._state = None
         self._device.state.subscribe(lambda state: self._state_change(state))
-        self._updateTime = time.time()        
+        self._updateTime = time.time()
         self._consumption = 0
 
     def _state_change(self, state):
 
-        should_update = self._state is not None        
+        should_update = self._state is not None
         self._state = state
         if should_update:
             self.async_write_ha_state()
-    
+
     def calculate(self):
-        timediff = math.floor(time.time() - self._updateTime)         # number of seconds since last update    
+        timediff = math.floor(time.time() - self._updateTime)         # number of seconds since last update
         self._consumption += self._state.power / 3600 / 1000 * timediff  # Calculate, in kWh, energy consumption since last update.
         self._updateTime = time.time()
 
-    @property 
+    @property
     def device_class(self):
         return SensorDeviceClass.ENERGY
 
@@ -144,8 +144,8 @@ class XComfortHumiditySensor(SensorEntity):
         self._state = state
         if should_update:
             self.async_write_ha_state()
-    
-    @property 
+
+    @property
     def device_class(self):
         return SensorDeviceClass.HUMIDITY
 
