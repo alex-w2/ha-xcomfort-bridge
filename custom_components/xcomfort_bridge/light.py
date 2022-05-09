@@ -150,7 +150,7 @@ class HASSXComfortLight(LightEntity):
     async def async_turn_off(self, **kwargs):
         log(f"async_turn_off {self._name} : {kwargs}")
         switch_task = self._device.switch(False)
-        # switch_task = self.hub.bridge.switch_device(self.device_id,True)
+        # switch_task = self.hub.bridge.switch_device(self.device_id,False)
         await switch_task
 
         self._state.switch = False

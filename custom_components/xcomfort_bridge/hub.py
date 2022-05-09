@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import traceback
 from typing import List
 
 from xcomfort.bridge import Bridge, State
@@ -20,8 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 """Logging function."""
 def log(msg: str):
     if VERBOSE:
-        _LOGGER.info(msg)
-
+        _LOGGER.warning(msg)
 
 """Wrapper class over bridge library to emulate hub."""
 class XComfortHub:
@@ -73,6 +73,7 @@ class XComfortBridge(Bridge):
         self._devicelist = {}
         self._roomHeatinglist = {}
         self._comps = {}
+        self.logger = lambda x: log(x)
 
     def _add_device(self, device):
         self._devices[device.device_id] = device            
@@ -83,14 +84,18 @@ class XComfortBridge(Bridge):
                 deviceId = item['deviceId']
                 if deviceId in self._devices:
                     device = self._devices[deviceId]
-
-                    if isinstance(device, Light):
-                        device.state.on_next(LightState(item['switch'], item['dimmvalue']))     
-                    if isinstance(device, RcTouch):
-                        device.state.on_next(RcTouchState(payload))                        
+                    try:
+                        # Sample light switch JSON payload
+                        # {'item': [{'deviceId': 142, 'dimmvalue': 0, 'switch': False}, {'deviceId': 142, 'info': [{'text': '1109', 'type': 2, 'icon': 1, 'value': '39'}]}]}
+                        if isinstance(device, Light) and 'switch' in item and 'dimmvalue' in item:
+                            device.state.on_next(LightState(item['switch'], item['dimmvalue']))
+                        if isinstance(device, RcTouch):
+                            device.state.on_next(RcTouchState(payload))
+                    except:
+                        self.logger(f"Failed to update device '{deviceId}'. Error: {traceback.format_exc()} Payload: {repr(payload)}")
 
     def _handle_SET_ALL_DATA(self, payload):
-        
+
         if "devices" in payload:
             for device in payload["devices"]:
                 self._devicelist[device['deviceId']] = device
