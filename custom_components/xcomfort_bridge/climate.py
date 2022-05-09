@@ -83,9 +83,6 @@ class HASSXComfortRcTouch(ClimateEntity):
         comp = hub.bridge.getComp(self._device._device["compId"])
         self.versionFW = comp["versionFW"]
 
-        rh = hub.bridge.getRoomHeating(self.device_id)
-        self.setpoint = float(rh["setpoint"])
-
     async def async_added_to_hass(self):
         _LOGGER.warning(f"Added to hass {self._name} ")
         if self._device.state is None:
@@ -97,10 +94,10 @@ class HASSXComfortRcTouch(ClimateEntity):
         self._state = state
         should_update = self._state is not None
 
-        log(f"State changed {self._name} : {state}")
+        log(f"Climate state changed {self._name} : {state}")
 
         if should_update:
-            self.schedule_update_ha_state()
+            self.async_write_ha_state()
 
     async def async_set_preset_mode(self, preset_mode):
         log(f"Set Preset mode {preset_mode}")
@@ -170,7 +167,7 @@ class HASSXComfortRcTouch(ClimateEntity):
     @property
     def target_temperature(self):
         """Returns the setpoint from RC touch, e.g. target_temperature"""
-        return self.setpoint
+        return self._state.setpoint
 
     @property
     def preset_modes(self):
