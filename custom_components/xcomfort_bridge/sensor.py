@@ -17,11 +17,18 @@ from homeassistant.const import (
     ENERGY_KILO_WATT_HOUR,
     PERCENTAGE,
     POWER_WATT,
+    TEMP_CELSIUS
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .const import DOMAIN, VERBOSE
+
 _LOGGER = logging.getLogger(__name__)
+
+def log(msg: str):
+    if VERBOSE:
+        _LOGGER.warning(msg)
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -39,6 +46,7 @@ async def async_setup_entry(
             sensors.append(XComfortPowerSensor(device))
             sensors.append(XComfortEnergySensor(device))
             sensors.append(XComfortHumiditySensor(device))
+            sensors.append(XComfortTemperatureSensor(device))
 
     _LOGGER.info(f"Added {len(sensors)} rc touch units")
     async_add_entities(sensors)
@@ -53,16 +61,20 @@ class XComfortPowerSensor(SensorEntity):
             state_class=SensorStateClass.MEASUREMENT,
             name="Current consumption",)
         self._device = device
-        self._attr_name = self._device.name
+        self._name = self._device.name
         self._attr_unique_id = f"energy_{self._device.name}_{self._device.device_id}"
         self._state = None
-        self._device.state.subscribe(lambda state: self._state_change(state))
+
+    async def async_added_to_hass(self):
+        _LOGGER.warning(f"Added to hass {self._name} ")
+        if self._device.state is None:
+            _LOGGER.warning(f"State is null for {self._name}")
+        else:
+            self._device.state.subscribe(lambda state: self._state_change(state))
 
     def _state_change(self, state):
-
-        should_update = self._state is not None
-
         self._state = state
+        should_update = self._state is not None
         if should_update:
             self.async_write_ha_state()
 
@@ -90,17 +102,22 @@ class XComfortEnergySensor(SensorEntity):
             state_class=SensorStateClass.TOTAL_INCREASING,
             name="Energy consumption",)
         self._device = device
-        self._attr_name = self._device.name
+        self._name = self._device.name
         self._attr_unique_id = f"energy_kwh_{self._device.name}_{self._device.device_id}"
         self._state = None
-        self._device.state.subscribe(lambda state: self._state_change(state))
         self._updateTime = time.time()
         self._consumption = 0
 
-    def _state_change(self, state):
+    async def async_added_to_hass(self):
+        _LOGGER.warning(f"Added to hass {self._name} ")
+        if self._device.state is None:
+            _LOGGER.warning(f"State is null for {self._name}")
+        else:
+            self._device.state.subscribe(lambda state: self._state_change(state))
 
-        should_update = self._state is not None
+    def _state_change(self, state):
         self._state = state
+        should_update = self._state is not None
         if should_update:
             self.async_write_ha_state()
 
@@ -127,21 +144,27 @@ class XComfortHumiditySensor(SensorEntity):
     def __init__(self, device:RcTouch):
         self._attr_device_class = SensorEntityDescription(
             key="humidity",
-            device_class=SensorDeviceClass.ENERGY,
-            native_unit_of_measurement=POWER_WATT,
+            device_class=SensorDeviceClass.HUMIDITY,
+            native_unit_of_measurement=PERCENTAGE,
             state_class=SensorStateClass.MEASUREMENT,
             name="Humidity",)
         self._device = device
-        self._attr_name = self._device.name
+        self._name = self._device.name
         self._attr_unique_id = f"humidity_{self._device.name}_{self._device.device_id}"
         self._state = None
-        self._device.state.subscribe(lambda state: self._state_change(state))
+        #self._device.state.subscribe(lambda state: self._state_change(state))
+
+    async def async_added_to_hass(self):
+        _LOGGER.warning(f"Added to hass {self._name} ")
+        if self._device.state is None:
+            _LOGGER.warning(f"State is null for {self._name}")
+        else:
+            self._device.state.subscribe(lambda state: self._state_change(state))
 
     def _state_change(self, state):
-
-        should_update = self._state is not None
-
         self._state = state
+        should_update = self._state is not None
+        log(f"State changed {self._name} : {state}")
         if should_update:
             self.async_write_ha_state()
 
@@ -156,3 +179,43 @@ class XComfortHumiditySensor(SensorEntity):
     @property
     def native_value(self):
         return self._state.current_humidity
+
+
+class XComfortTemperatureSensor(SensorEntity):
+    def __init__(self, device:RcTouch):
+        self._attr_device_class = SensorEntityDescription(
+            key="temperature",
+            device_class=SensorDeviceClass.TEMPERATURE,
+            native_unit_of_measurement=TEMP_CELSIUS,
+            state_class=SensorStateClass.MEASUREMENT,
+            name="Temperature",)
+        self._device = device
+        self._name = self._device.name
+        self._attr_unique_id = f"temperature_{self._device.name}_{self._device.device_id}"
+        self._state = None
+
+    async def async_added_to_hass(self):
+        _LOGGER.warning(f"Added to hass {self._name} ")
+        if self._device.state is None:
+            _LOGGER.warning(f"State is null for {self._name}")
+        else:
+            self._device.state.subscribe(lambda state: self._state_change(state))
+
+    def _state_change(self, state):
+        self._state = state
+        should_update = self._state is not None
+        log(f"State changed {self._name} : {state}")
+        if should_update:
+            self.async_write_ha_state()
+
+    @property
+    def device_class(self):
+        return SensorDeviceClass.TEMPERATURE
+
+    @property
+    def native_unit_of_measurement(self):
+        return TEMP_CELSIUS
+
+    @property
+    def native_value(self):
+        return self._state.current_temperature
