@@ -23,6 +23,7 @@ def log(msg: str):
     if VERBOSE:
         _LOGGER.warning(msg)
 
+
 """Wrapper class over bridge library to emulate hub."""
 class XComfortHub:
     def __init__(self, hass: HomeAssistant, identifier: str, ip: str, auth_key: str):
@@ -95,13 +96,22 @@ class XComfortBridge(Bridge):
                         self.logger(f"Failed to update device '{deviceId}'. Error: {traceback.format_exc()} Payload: {repr(payload)}")
 
     def _handle_SET_ALL_DATA(self, payload):
-
         if "devices" in payload:
             for device in payload["devices"]:
                 self._devicelist[device['deviceId']] = device
         if "roomHeating" in payload:
             for rh in payload["roomHeating"]:
-                self._roomHeatinglist[rh['roomId']] = rh
+                if 'roomId' in rh:
+                    roomId = rh['roomId']
+                    log(f"Updating room heating for room '{roomId}'")
+                    self._roomHeatinglist[roomId] = rh
+                    if 'power' in rh and 'setpoint' in rh and 'currentMode' in rh:
+                        state = RcTouchState(rh, float(rh['power']), float(rh['setpoint']), rh['currentMode'])
+                        device_id = rh['roomSensorId']
+                        thing = self._devices.get(device_id)
+                        if thing is not None:
+                            log(f"updating rc touch {device_id},{thing.name} {state}")
+                            thing.state.on_next(state)
         if "comps" in payload:
             for comp in payload["comps"]:
                 self._comps[comp['compId']] = comp
@@ -143,10 +153,14 @@ class XComfortBridge(Bridge):
     def _handle_SET_BRIDGE_STATE(self, payload):
         pass
 
+    def _handle_SET_ROOM_HEATING_STATE(self, payload):
+        pass
+
     def getComp(self, compId):
         for comp in self._comps.values():
             if comp["compId"] == compId:
                 return comp
+
     def getRoomHeating(self, sensorId):
         for rh in self._roomHeatinglist.values():
             if rh["roomSensorId"] == sensorId:

@@ -53,6 +53,18 @@ class RcTouchState:
                         self.setpoint = float(item['setpoint'])
                     if 'mode' in item:
                         self.mode = item['mode']
+        # From SET_ALL_DATA 'roomHeating'
+        if 'roomId' in payload:
+            if 'power' in payload:
+                self.power = float(payload['power'])
+            if 'setpoint' in payload:
+                self.setpoint = float(payload['setpoint'])
+            if 'mode' in payload:
+                self.mode = payload['mode']
+            if 'temp' in payload:
+                self.current_temperature = float(payload['temp'])
+            if 'humidity' in payload:
+                self.current_humidity = float(payload['humidity'])
 
     def __str__(self):
         return f"RcTouchState({self.current_temperature}, {self.current_humidity}, {self.power}, {self.mode})"
