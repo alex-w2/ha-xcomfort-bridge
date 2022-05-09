@@ -140,6 +140,9 @@ class XComfortBridge(Bridge):
 
         self.state = State.Ready
 
+    def _handle_SET_BRIDGE_STATE(self, payload):
+        pass
+
     def getComp(self, compId):
         for comp in self._comps.values():
             if comp["compId"] == compId:
