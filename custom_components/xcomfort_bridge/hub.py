@@ -121,28 +121,22 @@ class XComfortBridge(Bridge):
             device_id = device["deviceId"]
             name = device["name"]
             dev_type = device["devType"]
+            # Add new devices with initial state only,
+            # don't update existing devices with stale data
             if dev_type == 100 or dev_type == 101:
-                state = LightState(device["switch"], device["dimmvalue"])
                 thing = self._devices.get(device_id)
-                if thing is not None:
-                    log(f"updating light {device_id},{name} {state}")
-                    thing.state.on_next(state)
-                else:
-                    dimmable = device["dimmable"]
-                    log(f"adding light {device_id},{name} {state}")
-                    light = Light(self, device_id, name, dimmable, state)
+                if thing is None:
+                    state = LightState(device["switch"], device["dimmvalue"])
+                    log(f"adding light {device_id}, {name} {state}")
+                    light = Light(self, device_id, name, device["dimmable"], state)
                     self._add_device(light)
             elif dev_type == 450:
-                rh = self.getRoomHeating(device_id)
-                state = RcTouchState(device,float(rh['power']),float(rh['setpoint']),rh['currentMode'])
-
                 thing = self._devices.get(device_id)
-                if thing is not None:
-                    log(f"updating rc touch {device_id},{name} {state}")
-                    thing.state.on_next(state)
-                else:
-                    log(f"adding rc touch {device_id},{name} {state}")
-                    rctouch = RcTouch(self,device_id,name,device,state)
+                if thing is None:
+                    rh = self.getRoomHeating(device_id)
+                    state = RcTouchState(device, float(rh['power']), float(rh['setpoint']), rh['currentMode'])
+                    log(f"adding rc touch {device_id}, {name} {state}")
+                    rctouch = RcTouch(self,device_id ,name, device, state)
                     self._add_device(rctouch)
 
             else:
