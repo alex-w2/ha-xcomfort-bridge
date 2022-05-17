@@ -9,6 +9,7 @@ from typing import List
 
 from xcomfort.bridge import Bridge, State
 from xcomfort.devices import Light, LightState
+from .windowshade import WindowShade, WindowShadeState
 from .rctouch import RcTouch, RcTouchState
 
 from homeassistant.config_entries import ConfigEntry
@@ -92,6 +93,10 @@ class XComfortBridge(Bridge):
                             device.state.on_next(LightState(item['switch'], item['dimmvalue']))
                         if isinstance(device, RcTouch):
                             device.state.on_next(RcTouchState(payload))
+                        # Sample window shade JSON payload
+                        #  {'item': [{'deviceId': 10116, 'curstate': 1, 'shPos': 16, 'shSlatPos': 255, 'shCalInfo': 1}, {'deviceId': 10116, 'info': [{'text': '1109', 'type': 2, 'icon': 1, 'value': '17'}, {'text': '1132', 'type': 1, 'value': '16%'}]}]}
+                        if isinstance(device, WindowShade) and 'shPos' in item and 'shSlatPos' in item:
+                            device.state.on_next(WindowShadeState(item['shPos'], item['shSlatPos']))
                     except:
                         self.logger(f"Failed to update device '{deviceId}'. Error: {traceback.format_exc()} Payload: {repr(payload)}")
 
@@ -118,26 +123,36 @@ class XComfortBridge(Bridge):
 
     def _handle_SET_HOME_DATA(self, payload):
         for device in self._devicelist.values():
-            device_id = device["deviceId"]
-            name = device["name"]
-            dev_type = device["devType"]
-            # Add new devices with initial state only,
-            # don't update existing devices with stale data
-            if dev_type == 100 or dev_type == 101:
-                thing = self._devices.get(device_id)
-                if thing is None:
-                    state = LightState(device["switch"], device["dimmvalue"])
-                    log(f"adding light {device_id}, {name} {state}")
-                    light = Light(self, device_id, name, device["dimmable"], state)
-                    self._add_device(light)
-            elif dev_type == 450:
-                thing = self._devices.get(device_id)
-                if thing is None:
-                    rh = self.getRoomHeating(device_id)
-                    state = RcTouchState(device, float(rh['power']), float(rh['setpoint']), rh['currentMode'])
-                    log(f"adding rc touch {device_id}, {name} {state}")
-                    rctouch = RcTouch(self,device_id ,name, device, state)
-                    self._add_device(rctouch)
+            try:
+                device_id = device["deviceId"]
+                name = device["name"]
+                dev_type = device["devType"]
+                # Add new devices with initial state only,
+                # don't update existing devices with stale data
+                if dev_type == 100 or dev_type == 101:
+                    thing = self._devices.get(device_id)
+                    if thing is None:
+                        state = LightState(device["switch"], device["dimmvalue"])
+                        log(f"adding light {device_id}, {name} {state}")
+                        light = Light(self, device_id, name, device["dimmable"], state)
+                        self._add_device(light)
+                elif dev_type == 102:
+                    thing = self._devices.get(device_id)
+                    if thing is None:
+                        state = WindowShadeState(device['shPos'], device['shSlatPos'])
+                        log(f"adding window shade {device_id}, {name} {state}")
+                        shade = WindowShade(self, device_id, name, device, state)
+                        self._add_device(shade)
+                elif dev_type == 450:
+                    thing = self._devices.get(device_id)
+                    if thing is None:
+                        rh = self.getRoomHeating(device_id)
+                        state = RcTouchState(device, float(rh['power']), float(rh['setpoint']), rh['currentMode'])
+                        log(f"adding rc touch {device_id}, {name} {state}")
+                        rctouch = RcTouch(self,device_id ,name, device, state)
+                        self._add_device(rctouch)
+            except:
+                self.logger(f"Failed to add device '{device_id}'. Error: {traceback.format_exc()} Payload: {repr(payload)}")
 
             else:
                 log(f"Unknown device type {dev_type} named '{name}' - Skipped")
