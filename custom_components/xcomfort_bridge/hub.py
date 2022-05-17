@@ -5,15 +5,15 @@ from __future__ import annotations
 import asyncio
 import logging
 import traceback
-from typing import List
 
 from xcomfort.bridge import Bridge, State
 from xcomfort.devices import Light, LightState
 from .windowshade import WindowShade, WindowShadeState
 from .rctouch import RcTouch, RcTouchState
+from .rocker import Rocker
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, EventBus
 
 from .const import DOMAIN, VERBOSE
 
@@ -29,7 +29,7 @@ def log(msg: str):
 class XComfortHub:
     def __init__(self, hass: HomeAssistant, identifier: str, ip: str, auth_key: str):
         """Initialize underlying bridge"""
-        bridge = XComfortBridge(ip, auth_key)
+        bridge = XComfortBridge(hass.bus, ip, auth_key)
         self.bridge = bridge
         self.identifier = identifier
         if self.identifier is None:
@@ -70,12 +70,13 @@ class XComfortHub:
 
 """Low-level library that handles incoming data from websocket."""
 class XComfortBridge(Bridge):
-    def __init__(self, ip_address: str, authkey: str, session=None):
+    def __init__(self, bus: EventBus, ip_address: str, authkey: str, session=None):
         super().__init__(ip_address, authkey, session)
         self._devicelist = {}
         self._roomHeatinglist = {}
         self._comps = {}
         self.logger = lambda x: log(x)
+        self.bus = bus
 
     def _add_device(self, device):
         self._devices[device.device_id] = device
@@ -97,8 +98,12 @@ class XComfortBridge(Bridge):
                         #  {'item': [{'deviceId': 10116, 'curstate': 1, 'shPos': 16, 'shSlatPos': 255, 'shCalInfo': 1}, {'deviceId': 10116, 'info': [{'text': '1109', 'type': 2, 'icon': 1, 'value': '17'}, {'text': '1132', 'type': 1, 'value': '16%'}]}]}
                         if isinstance(device, WindowShade) and 'shPos' in item and 'shSlatPos' in item:
                             device.state.on_next(WindowShadeState(item['shPos'], item['shSlatPos']))
+                        if isinstance(device, Rocker) and 'curstate' in item:
+                            curstate = item['curstate']
+                            log(f"Rocker {device.name} toggled: {curstate}")
+                            self.bus.fire(f"xcomfort_rocker_{device.name}", {"state": int(curstate) })
                     except:
-                        self.logger(f"Failed to update device '{deviceId}'. Error: {traceback.format_exc()} Payload: {repr(payload)}")
+                        log(f"Failed to update device '{deviceId}'. Error: {traceback.format_exc()} Payload: {repr(payload)}")
 
     def _handle_SET_ALL_DATA(self, payload):
         if "devices" in payload:
@@ -143,6 +148,17 @@ class XComfortBridge(Bridge):
                         log(f"adding window shade {device_id}, {name} {state}")
                         shade = WindowShade(self, device_id, name, device, state)
                         self._add_device(shade)
+                elif dev_type == 220:
+                    log(f"Device 220: {device}")
+                    thing = self._devices.get(device_id)
+                    if thing is None and 'compId' in device:
+                        compId = device['compId']
+                        if compId in self._comps:
+                            comp = self._comps[compId]
+                            name = f"{comp['name']} {name}"
+                            log(f"adding rocker {device_id}, {name}")
+                            rocker = Rocker(self, device_id, name, device)
+                            self._add_device(rocker)
                 elif dev_type == 450:
                     thing = self._devices.get(device_id)
                     if thing is None:
@@ -151,11 +167,10 @@ class XComfortBridge(Bridge):
                         log(f"adding rc touch {device_id}, {name} {state}")
                         rctouch = RcTouch(self,device_id ,name, device, state)
                         self._add_device(rctouch)
+                else:
+                    log(f"Unknown device type {dev_type} named '{name}' - Skipped")
             except:
-                self.logger(f"Failed to add device '{device_id}'. Error: {traceback.format_exc()} Payload: {repr(payload)}")
-
-            else:
-                log(f"Unknown device type {dev_type} named '{name}' - Skipped")
+                log(f"Failed to add device '{device_id}'. Error: {traceback.format_exc()} Payload: {repr(payload)}")
 
         self.state = State.Ready
 
