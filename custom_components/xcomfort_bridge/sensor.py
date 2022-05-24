@@ -61,14 +61,14 @@ class XComfortPowerSensor(SensorEntity):
             state_class=SensorStateClass.MEASUREMENT,
             name="Current consumption",)
         self._device = device
-        self._name = self._device.name
-        self._attr_unique_id = f"energy_{self._device.name}_{self._device.device_id}"
+        self._attr_name = f"{self._device.name} Power"
+        self._attr_unique_id = f"power_{self._device.name}_{self._device.device_id}"
         self._state = None
 
     async def async_added_to_hass(self):
-        _LOGGER.warning(f"Added to hass {self._name} ")
+        _LOGGER.warning(f"Added to hass {self._attr_name} ")
         if self._device.state is None:
-            _LOGGER.warning(f"State is null for {self._name}")
+            _LOGGER.warning(f"State is null for {self._attr_name}")
         else:
             self._device.state.subscribe(lambda state: self._state_change(state))
 
@@ -102,16 +102,16 @@ class XComfortEnergySensor(SensorEntity):
             state_class=SensorStateClass.TOTAL_INCREASING,
             name="Energy consumption",)
         self._device = device
-        self._name = self._device.name
+        self._attr_name = f"{self._device.name} Energy"
         self._attr_unique_id = f"energy_kwh_{self._device.name}_{self._device.device_id}"
         self._state = None
         self._updateTime = time.time()
         self._consumption = 0
 
     async def async_added_to_hass(self):
-        _LOGGER.warning(f"Added to hass {self._name} ")
+        _LOGGER.warning(f"Added to hass {self._attr_name} ")
         if self._device.state is None:
-            _LOGGER.warning(f"State is null for {self._name}")
+            _LOGGER.warning(f"State is null for {self._attr_name}")
         else:
             self._device.state.subscribe(lambda state: self._state_change(state))
 
@@ -149,22 +149,22 @@ class XComfortHumiditySensor(SensorEntity):
             state_class=SensorStateClass.MEASUREMENT,
             name="Humidity",)
         self._device = device
-        self._name = self._device.name
+        self._attr_name = f"{self._device.name} Humidity"
         self._attr_unique_id = f"humidity_{self._device.name}_{self._device.device_id}"
         self._state = None
         #self._device.state.subscribe(lambda state: self._state_change(state))
 
     async def async_added_to_hass(self):
-        _LOGGER.warning(f"Added to hass {self._name} ")
+        _LOGGER.warning(f"Added to hass {self._attr_name} ")
         if self._device.state is None:
-            _LOGGER.warning(f"State is null for {self._name}")
+            _LOGGER.warning(f"State is null for {self._attr_name}")
         else:
             self._device.state.subscribe(lambda state: self._state_change(state))
 
     def _state_change(self, state):
         self._state = state
         should_update = self._state is not None
-        log(f"State changed {self._name} : {state}")
+        log(f"State changed {self._attr_name} : {state}")
         if should_update:
             self.async_write_ha_state()
 
@@ -190,21 +190,21 @@ class XComfortTemperatureSensor(SensorEntity):
             state_class=SensorStateClass.MEASUREMENT,
             name="Temperature",)
         self._device = device
-        self._name = self._device.name
+        self._attr_name = f"{self._device.name} Temperature"
         self._attr_unique_id = f"temperature_{self._device.name}_{self._device.device_id}"
         self._state = None
 
     async def async_added_to_hass(self):
-        _LOGGER.warning(f"Added to hass {self._name} ")
+        _LOGGER.warning(f"Added to hass {self._attr_name} ")
         if self._device.state is None:
-            _LOGGER.warning(f"State is null for {self._name}")
+            _LOGGER.warning(f"State is null for {self._attr_name}")
         else:
             self._device.state.subscribe(lambda state: self._state_change(state))
 
     def _state_change(self, state):
         self._state = state
         should_update = self._state is not None
-        log(f"State changed {self._name} : {state}")
+        log(f"State changed {self._attr_name} : {state}")
         if should_update:
             self.async_write_ha_state()
 
