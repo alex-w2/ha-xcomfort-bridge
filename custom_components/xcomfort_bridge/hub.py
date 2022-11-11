@@ -8,8 +8,6 @@ import traceback
 
 from xcomfort.bridge import Bridge, State
 from xcomfort.devices import Light, LightState
-from .windowshade import WindowShade, WindowShadeState
-from .rctouch import RcTouch, RcTouchState
 from .rocker import Rocker
 
 from homeassistant.config_entries import ConfigEntry
@@ -29,7 +27,7 @@ def log(msg: str):
 class XComfortHub:
     def __init__(self, hass: HomeAssistant, identifier: str, ip: str, auth_key: str):
         """Initialize underlying bridge"""
-        bridge = XComfortBridge(hass.bus, ip, auth_key)
+        bridge = Bridge(ip, auth_key)
         self.bridge = bridge
         self.identifier = identifier
         if self.identifier is None:
@@ -53,7 +51,15 @@ class XComfortHub:
         log("loading devices")
         devs = await self.bridge.get_devices()
         self.devices = devs.values()
+
         log(f"loaded {len(self.devices)} devices")
+
+        log("loading rooms")
+
+        rooms = await self.bridge.get_rooms()
+        self.rooms = rooms.values()
+
+        log(f"loaded {len(self.rooms)} rooms")
 
     @property
     def hub_id(self) -> str:
@@ -67,8 +73,9 @@ class XComfortHub:
     def get_hub(hass: HomeAssistant, entry: ConfigEntry) -> XComfortHub:
         return hass.data[DOMAIN][entry.entry_id]
 
-
-"""Low-level library that handles incoming data from websocket."""
+# Not currently used, but needs some manual merging after
+#"""Low-level library that handles incoming data from websocket."""
+"""
 class XComfortBridge(Bridge):
     def __init__(self, bus: EventBus, ip_address: str, authkey: str, session=None):
         super().__init__(ip_address, authkey, session)
@@ -189,4 +196,4 @@ class XComfortBridge(Bridge):
         for rh in self._roomHeatinglist.values():
             if rh["roomSensorId"] == sensorId:
                 return rh
-
+"""
