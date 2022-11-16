@@ -6,8 +6,7 @@ import asyncio
 import logging
 import traceback
 
-from xcomfort.bridge import Bridge, State
-from xcomfort.devices import Light, LightState
+from xcomfort.bridge import Bridge
 from .rocker import Rocker
 
 from homeassistant.config_entries import ConfigEntry
@@ -27,7 +26,7 @@ def log(msg: str):
 class XComfortHub:
     def __init__(self, hass: HomeAssistant, identifier: str, ip: str, auth_key: str):
         """Initialize underlying bridge"""
-        bridge = Bridge(ip, auth_key)
+        bridge = XComfortBridge(hass.bus, ip, auth_key)
         self.bridge = bridge
         self.identifier = identifier
         if self.identifier is None:
@@ -72,6 +71,24 @@ class XComfortHub:
     @staticmethod
     def get_hub(hass: HomeAssistant, entry: ConfigEntry) -> XComfortHub:
         return hass.data[DOMAIN][entry.entry_id]
+
+class XComfortBridge(Bridge):
+    def __init__(self, bus: EventBus, ip_address: str, authkey: str):
+        super().__init__(ip_address, authkey)
+
+        self.bus = bus
+
+    def _create_device_from_payload(self, payload):
+        dev_type = payload["devType"]
+        if dev_type == 220:
+            # Rocker switch
+            device_id = payload['deviceId']
+            name = payload['name']
+            comp_id = payload["compId"]
+            log(f"new Rocker {name}")
+            return Rocker(self, device_id, name, comp_id)
+
+        return super()._create_device_from_payload(payload)
 
 # Not currently used, but needs some manual merging after
 #"""Low-level library that handles incoming data from websocket."""
