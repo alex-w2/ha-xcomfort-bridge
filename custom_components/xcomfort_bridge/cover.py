@@ -128,7 +128,11 @@ class HASSXComfortShade(CoverEntity):
 
     async def async_open_cover(self, **kwargs):
         """Open the cover."""
-        await self._device.move_up()
+        # This sends the wrong command in xcomfort lib 0.0.18
+        # It sends 3, which is nudge down. 4 is nudge up.
+        # The correct command is 0 (at least for me)
+        #await self._device.move_up()
+        await self._device.send_state(0)
 
     async def async_close_cover(self, **kwargs):
         """Close cover."""
