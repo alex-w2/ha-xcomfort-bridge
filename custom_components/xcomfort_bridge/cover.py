@@ -114,6 +114,18 @@ class HASSXComfortShade(CoverEntity):
         """Flag supported features."""
         return CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
 
+    @property
+    def is_opening(self):
+        return None
+
+    @property
+    def is_closing(self):
+        return None
+
+    @property
+    def is_closed(self):
+        return None
+
     async def async_open_cover(self, **kwargs):
         """Open the cover."""
         await self._device.move_up()
