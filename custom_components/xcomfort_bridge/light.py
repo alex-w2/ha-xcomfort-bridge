@@ -22,7 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def log(msg: str):
     if VERBOSE:
-        _LOGGER.warning(msg)
+        _LOGGER.info(msg)
 
 
 # PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -68,9 +68,9 @@ class HASSXComfortLight(LightEntity):
         self._unique_id = f"light_{DOMAIN}_{hub.identifier}-{device.device_id}"
 
     async def async_added_to_hass(self):
-        _LOGGER.warning(f"Added to hass {self._name} ")
+        log(f"Added to hass {self._name} ")
         if self._device.state is None:
-            _LOGGER.warning(f"State is null for {self._name}")
+            log(f"State is null for {self._name}")
         else:
             self._device.state.subscribe(lambda state: self._state_change(state))
 
