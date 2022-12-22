@@ -61,8 +61,6 @@ class HASSXComfortShade(CoverEntity):
         self._state = None
         self.device_id = device.device_id
 
-        self.device_class = DEVICE_CLASS_SHADE
-
         self._unique_id = f"shade_{DOMAIN}_{hub.identifier}-{device.device_id}"
 
     async def async_added_to_hass(self):
@@ -92,6 +90,10 @@ class HASSXComfortShade(CoverEntity):
             "sw_version": "Unknown",
             "via_device": self.hub.hub_id,
         }
+
+    @property
+    def device_class(self):
+        return DEVICE_CLASS_SHADE
 
     @property
     def name(self):
