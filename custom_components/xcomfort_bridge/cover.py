@@ -62,8 +62,6 @@ class HASSXComfortShade(CoverEntity):
         self._state = None
         self.device_id = device.device_id
 
-        self.device_class = DEVICE_CLASS_SHADE
-
         self._unique_id = f"shade_{DOMAIN}_{hub.identifier}-{device.device_id}"
 
     async def async_added_to_hass(self):
@@ -95,6 +93,10 @@ class HASSXComfortShade(CoverEntity):
         }
 
     @property
+    def device_class(self):
+        return DEVICE_CLASS_SHADE
+
+    @property
     def name(self):
         """Return the display name of this light."""
         return self._name
@@ -113,10 +115,26 @@ class HASSXComfortShade(CoverEntity):
         """Flag supported features."""
         return CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
 
+    @property
+    def is_opening(self):
+        return None
+
+    @property
+    def is_closing(self):
+        return None
+
+    @property
+    def is_closed(self):
+        return None
+
     async def async_open_cover(self, **kwargs):
         """Open the cover."""
-        await self._device.move_up()
-    
+        # This sends the wrong command in xcomfort lib 0.0.18
+        # It sends 3, which is nudge down. 4 is nudge up.
+        # The correct command is 0 (at least for me)
+        #await self._device.move_up()
+        await self._device.send_state(0)
+
     async def async_close_cover(self, **kwargs):
         """Close cover."""
         await self._device.move_down()
