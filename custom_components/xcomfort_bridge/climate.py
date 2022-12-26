@@ -90,7 +90,7 @@ class HASSXComfortRcTouch(ClimateEntity):
         self._state = state
         should_update = self._state is not None
 
-        log(f"State changed {self._name} : {state}")
+        log(f"Climate state changed {self._name} : {state}")
 
         if should_update:
             self.schedule_update_ha_state()
@@ -119,7 +119,7 @@ class HASSXComfortRcTouch(ClimateEntity):
 
     @property
     def name(self):
-        """Return the display name of this light."""
+        """Return the display name of this entity."""
         return self._name
 
     @property
