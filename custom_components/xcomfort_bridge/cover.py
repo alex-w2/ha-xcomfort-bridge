@@ -64,6 +64,9 @@ class HASSXComfortShade(CoverEntity):
 
         self._unique_id = f"shade_{DOMAIN}_{hub.identifier}-{device.device_id}"
 
+        self._position = None
+        self._tilt_position = None
+
     async def async_added_to_hass(self):
         log(f"Added to hass {self._name} ")
         if self._device.state is None:
@@ -77,6 +80,12 @@ class HASSXComfortShade(CoverEntity):
         should_update = self._state is not None
 
         log(f"State changed {self._name} : {state}")
+
+        if "shPos" in state.raw:
+            # 100 is fully open in HA, whereas fully closed in XComfort
+            self._position = 100 - int(state.raw["shPos"])
+        if "shSlatPos" in state.raw:
+            self._tilt_position = int(state.raw["shSlatPos"])
 
         if should_update:
             self.schedule_update_ha_state()
@@ -125,7 +134,17 @@ class HASSXComfortShade(CoverEntity):
 
     @property
     def is_closed(self):
-        return None
+        if self._position == None:
+            return None
+        return self._position < 100
+
+    @property
+    def current_cover_position(self):
+        return self._position
+
+    @property
+    def current_cover_tilt_position(self):
+        return self._tilt_position
 
     async def async_open_cover(self, **kwargs):
         """Open the cover."""
