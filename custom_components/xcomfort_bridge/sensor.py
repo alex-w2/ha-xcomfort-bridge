@@ -1,6 +1,6 @@
 """Support for mill wifi-enabled home heaters."""
 from __future__ import annotations
-from .hub import XComfortHub
+
 import logging
 
 from homeassistant.components.sensor import (
@@ -16,18 +16,21 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
     POWER_WATT,
-    TEMP_CELSIUS
+    TEMP_CELSIUS,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, VERBOSE
 
+from .hub import XComfortHub
+
 _LOGGER = logging.getLogger(__name__)
 
 def log(msg: str):
     if VERBOSE:
         _LOGGER.info(msg)
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
@@ -40,32 +43,35 @@ async def async_setup_entry(
     _LOGGER.info(f"Found {len(rooms)} xcomfort rooms")
     _LOGGER.info(f"Found {len(devices)} xcomfort devices")
 
-    sensors= list()
+    sensors = list()
     for room in rooms:
-        if room.state.value.power is not None:
-            _LOGGER.info(f"Adding power sensor for room {room.name}")
-            sensors.append(XComfortPowerSensor(room))
+        if room.state.value is not None:
+            if room.state.value.power is not None:
+                _LOGGER.info(f"Adding power sensor for room {room.name}")
+                sensors.append(XComfortPowerSensor(room))
 
-        if room.state.value.humidity is not None:
-            _LOGGER.info(f"Adding humidity sensor for room {room.name}")
-            sensors.append(XComfortHumiditySensor(room))
+            if room.state.value.humidity is not None:
+                _LOGGER.info(f"Adding humidity sensor for room {room.name}")
+                sensors.append(XComfortHumiditySensor(room))
 
-        if room.state.value.temperature is not None:
-            _LOGGER.info(f"Adding temperature sensor for room {room.name}")
-            sensors.append(XComfortTemperatureSensor(room))
+            if room.state.value.temperature is not None:
+                _LOGGER.info(f"Adding temperature sensor for room {room.name}")
+                sensors.append(XComfortTemperatureSensor(room))
 
     _LOGGER.info(f"Added {len(sensors)} rc touch units")
     async_add_entities(sensors)
     return
 
+
 class XComfortPowerSensor(SensorEntity):
-    def __init__(self, room:Room):
+    def __init__(self, room: Room):
         self._attr_device_class = SensorEntityDescription(
             key="current_consumption",
             device_class=SensorDeviceClass.ENERGY,
             native_unit_of_measurement=POWER_WATT,
             state_class=SensorStateClass.MEASUREMENT,
-            name="Current consumption",)
+            name="Current consumption",
+        )
         self._room = room
         self._attr_name = self._room.name
         self._attr_name = f"{self._room.name} Energy"
