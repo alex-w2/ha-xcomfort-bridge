@@ -189,7 +189,6 @@ class XComfortHumiditySensor(SensorEntity):
     def _state_change(self, state):
         self._state = state
         should_update = self._state is not None
-        _LOGGER(f"State changed {self._attr_name} : {state}")
         if should_update:
             self.async_write_ha_state()
 
@@ -229,7 +228,6 @@ class XComfortTemperatureSensor(SensorEntity):
     def _state_change(self, state):
         self._state = state
         should_update = self._state is not None
-        log(f"State changed {self._attr_name} : {state}")
         if should_update:
             self.async_write_ha_state()
 
