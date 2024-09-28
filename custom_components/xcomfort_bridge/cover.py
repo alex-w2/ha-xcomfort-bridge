@@ -6,9 +6,9 @@ from xcomfort.devices import Shade
 
 from homeassistant.components.cover import (
     ATTR_POSITION,
-    CoverEntityFeature,
-    DEVICE_CLASS_SHADE,
+    CoverDeviceClass,
     CoverEntity,
+    CoverEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -67,7 +67,7 @@ class HASSXComfortShade(CoverEntity):
 
     @property
     def device_class(self):
-        return DEVICE_CLASS_SHADE
+        return CoverDeviceClass.SHADE
 
     async def async_added_to_hass(self):
         log(f"Added to hass {self._name} ")
@@ -143,10 +143,13 @@ class HASSXComfortShade(CoverEntity):
     @property
     def current_cover_position(self) -> int | None:
         if self._state:
+            if self._state.position is None:
+                return None  # Return None if position is NoneType
             # xcomfort interprets 90% to be almost fully closed,
             # while HASS UI makes 90% look almost open, so we
             # invert.
             return 100 - self._state.position
+        return None  # Return None if _state is falsy or does not exist
 
     async def async_set_cover_position(self, **kwargs) -> None:
         """Move the cover to a specific position."""

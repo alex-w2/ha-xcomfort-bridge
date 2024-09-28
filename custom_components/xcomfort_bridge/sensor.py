@@ -1,4 +1,5 @@
 """Support for Xcomfort sensors."""
+
 from __future__ import annotations
 
 import time
@@ -23,7 +24,7 @@ from homeassistant.const import (
     ENERGY_WATT_HOUR,
     PERCENTAGE,
     TEMP_CELSIUS,
-
+    UnitOfEnergy,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -73,7 +74,7 @@ class XComfortPowerSensor(SensorEntity):
         self._attr_device_class = SensorEntityDescription(
             key="current_consumption",
             device_class=SensorDeviceClass.ENERGY,
-            native_unit_of_measurement=ENERGY_WATT_HOUR,
+            native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
             state_class=SensorStateClass.MEASUREMENT,
             name="Current consumption",
         )
@@ -101,22 +102,21 @@ class XComfortPowerSensor(SensorEntity):
 
     @property
     def native_unit_of_measurement(self):
-        return ENERGY_WATT_HOUR
+        return UnitOfEnergy.WATT_HOUR
 
     @property
     def native_value(self):
-        return self._state.power
+        return self._state and self._state.power
 
 
 class XComfortEnergySensor(RestoreSensor):
-
     _attr_state_class = SensorStateClass.TOTAL
 
     def __init__(self, room: Room):
         self._attr_device_class = SensorEntityDescription(
             key="energy_used",
             device_class=SensorDeviceClass.ENERGY,
-            native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+            native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
             state_class=SensorStateClass.TOTAL_INCREASING,
             name="Energy consumption",
         )
@@ -136,7 +136,6 @@ class XComfortEnergySensor(RestoreSensor):
             self._consumption = cast(float, savedstate.native_value)
 
     def _state_change(self, state):
-
         should_update = self._state is not None
         self._state = state
         if should_update:
@@ -157,7 +156,7 @@ class XComfortEnergySensor(RestoreSensor):
 
     @property
     def native_unit_of_measurement(self):
-        return ENERGY_KILO_WATT_HOUR
+        return UnitOfEnergy.KILO_WATT_HOUR
 
     @property
     def native_value(self):
@@ -166,7 +165,7 @@ class XComfortEnergySensor(RestoreSensor):
 
 
 class XComfortHumiditySensor(SensorEntity):
-    def __init__(self, room:Room):
+    def __init__(self, room: Room):
         self._attr_device_class = SensorEntityDescription(
             key="humidity",
             device_class=SensorDeviceClass.HUMIDITY,
@@ -202,17 +201,18 @@ class XComfortHumiditySensor(SensorEntity):
 
     @property
     def native_value(self):
-        return self._state.humidity
+        return self._state and self._state.humidity
 
 
 class XComfortTemperatureSensor(SensorEntity):
-    def __init__(self, room:Room):
+    def __init__(self, room: Room):
         self._attr_device_class = SensorEntityDescription(
             key="temperature",
             device_class=SensorDeviceClass.TEMPERATURE,
             native_unit_of_measurement=TEMP_CELSIUS,
             state_class=SensorStateClass.MEASUREMENT,
-            name="Temperature",)
+            name="Temperature",
+        )
         self._room = room
         self._attr_name = f"{self._room.name} Temperature"
         self._attr_unique_id = f"temperature_{self._room.room_id}"
