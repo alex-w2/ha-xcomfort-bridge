@@ -20,10 +20,8 @@ from xcomfort.devices import RcTouch
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    ENERGY_KILO_WATT_HOUR,
-    ENERGY_WATT_HOUR,
     PERCENTAGE,
-    TEMP_CELSIUS,
+    UnitOfTemperature,
     UnitOfEnergy,
 )
 from homeassistant.core import HomeAssistant
@@ -209,7 +207,7 @@ class XComfortTemperatureSensor(SensorEntity):
         self._attr_device_class = SensorEntityDescription(
             key="temperature",
             device_class=SensorDeviceClass.TEMPERATURE,
-            native_unit_of_measurement=TEMP_CELSIUS,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
             state_class=SensorStateClass.MEASUREMENT,
             name="Temperature",
         )
@@ -237,8 +235,10 @@ class XComfortTemperatureSensor(SensorEntity):
 
     @property
     def native_unit_of_measurement(self):
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
 
     @property
     def native_value(self):
+        if self._state is None:
+            return None
         return self._state.temperature
