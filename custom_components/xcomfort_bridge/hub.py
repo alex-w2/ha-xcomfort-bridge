@@ -8,8 +8,6 @@ from typing import List
 
 from xcomfort.bridge import Bridge
 
-from .xcomfort_switch import Switch
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, EventBus
 
@@ -18,12 +16,16 @@ from .const import DOMAIN, VERBOSE
 _LOGGER = logging.getLogger(__name__)
 
 """Logging function."""
+
+
 def log(msg: str):
     if VERBOSE:
         _LOGGER.info(msg)
 
 
 """Wrapper class over bridge library to emulate hub."""
+
+
 class XComfortHub:
     def __init__(self, hass: HomeAssistant, identifier: str, ip: str, auth_key: str):
         """Initialize underlying bridge"""
@@ -79,19 +81,9 @@ class XComfortHub:
     def get_hub(hass: HomeAssistant, entry: ConfigEntry) -> XComfortHub:
         return hass.data[DOMAIN][entry.entry_id]
 
+
 class XComfortBridge(Bridge):
     def __init__(self, bus: EventBus, ip_address: str, authkey: str):
         super().__init__(ip_address, authkey)
 
         self.bus = bus
-
-    def _create_device_from_payload(self, payload):
-        dev_type = payload["devType"]
-        if dev_type == 220:
-            # Rocker switch
-            device_id = payload['deviceId']
-            name = payload['name']
-            comp_id = payload["compId"]
-            return Switch(self, device_id, name, comp_id)
-
-        return super()._create_device_from_payload(payload)
