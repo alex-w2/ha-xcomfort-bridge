@@ -28,15 +28,16 @@ async def async_setup_entry(
     for device in hub.devices:
         if isinstance(device, Rocker):
             _LOGGER.info(f"Adding {device}")
-            switch = XComfortSwitch(hass, device)
+            switch = XComfortSwitch(hass, hub, device)
             switches.append(switch)
 
     async_add_entities(switches)
 
 
 class XComfortSwitch(SwitchEntity):
-    def __init__(self, hass: HomeAssistant, device: Rocker):
+    def __init__(self, hass: HomeAssistant, hub: XComfortHub, device: Rocker):
         self.hass = hass
+        self.hub = hub
 
         self._attr_device_class = SwitchDeviceClass.SWITCH
         self._device = device
@@ -44,7 +45,13 @@ class XComfortSwitch(SwitchEntity):
         self._state = None
         self.device_id = device.device_id
 
-        self._unique_id = f"switch_{DOMAIN}_{device.device_id}"
+        # Workaround for XComfort rockets switches being named just
+        # "Rocker 1" etc, prefix with component name when possible
+        comp_name = hub.get_component_name(device.comp_id)
+        if comp_name is not None:
+            self._name = f"{comp_name} - {self._name}"
+
+        self._unique_id = f"switch_{DOMAIN}_{hub.identifier}-{device.device_id}"
 
     async def async_added_to_hass(self) -> None:
         self._device.state.subscribe(self._state_change)
@@ -65,7 +72,7 @@ class XComfortSwitch(SwitchEntity):
 
     @property
     def name(self) -> str:
-        return self._device.name_with_controlled
+        return self._name
 
     @property
     def unique_id(self) -> str:
@@ -77,7 +84,7 @@ class XComfortSwitch(SwitchEntity):
         return False
 
     async def async_turn_on(self, **kwargs):
-        raise NotImplementedError()
+        pass
 
     async def async_turn_off(self, **kwargs):
-        raise NotImplementedError()
+        pass
