@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, VERBOSE
 from .hub import XComfortHub
+import re
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +53,15 @@ class XComfortSwitch(SwitchEntity):
             self._name = f"{comp_name} - {self._name}"
 
         self._unique_id = f"switch_{DOMAIN}_{hub.identifier}-{device.device_id}"
+        self.event_name = self.generate_event_name()
+
+    def generate_event_name(self):
+        # Unique ID isn't very suitable for the event name, as it is hard for the user
+        #  to figure out what it would be. Instead, use device name and remove some
+        #  special characters. e.g. switch_xcomfort_bridge_hallway_rocker_1
+        event_name = re.sub(r'_+', '_', f"switch_{DOMAIN}_{re.sub(r'[ /\-.]', '_', self._name.lower())}")
+        _LOGGER.info(f"Enabled event: '{event_name}' for {self._name}")
+        return event_name
 
     async def async_added_to_hass(self) -> None:
         self._device.state.subscribe(self._state_change)
@@ -64,7 +74,7 @@ class XComfortSwitch(SwitchEntity):
             self.schedule_update_ha_state()
             # Emit event to enable stateless automation, since
             # actual switch state may be same as before
-            self.hass.bus.fire(self._unique_id, {"on": state})
+            self.hass.bus.fire(self.event_name, {"on": state})
 
     @property
     def is_on(self) -> Optional[bool]:
